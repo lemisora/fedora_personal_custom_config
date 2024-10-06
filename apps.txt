@@ -13,3 +13,17 @@ org.gnome.gitlab.somas.Apostrophe
 org.gnome.Weather
 org.texstudio.TeXstudio
 org.wezfurlong.wezterm
+com.obsproject.Studio
+com.usebottles.bottles
+de.haeckerfelix.Fragments
+io.github.dimtpap.coppwr
+io.github.nokse22.ultimate-tic-tac-toe
+io.github.pejuko.follamac
+io.github.zen_browser.zen
+md.obsidian.Obsidian
+net.nokyan.Resources
+org.gnome.Builder
+org.mozilla.firefox
+org.telegram.desktop
+com.github.wwmm.easyeffects
+com.jetbrains.IntelliJ-IDEA-Community
