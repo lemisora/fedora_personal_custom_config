@@ -119,7 +119,14 @@ EOF
         7)
             print_message "Instalando fuentes y utilidades..."
             if confirm_action; then
-                dnf5 install -y rsms-inter-fonts fastfetch
+                #Añadir repositorio de terra
+                sudo dnf install --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' --setopt='terra.gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' terra-release
+                dnf5 install -y rsms-inter-fonts fastfetch curl
+                curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo
+                dnf install cloudflare-warp
+                systemctl enable --now warp-svc
+                warp-cli mode warp+doh
+                warp-cli connect
                 print_message "Fuentes y utilidades instaladas"
             fi
             ;;
