@@ -1,0 +1,15 @@
+com.bitwarden.desktop
+com.github.taiko2k.tauonmb
+com.github.tchx84.Flatseal
+com.mattjakeman.ExtensionManager
+dev.zed.Zed
+io.frama.tractor.carburetor
+io.github.alainm23.planify
+io.github.flattool.Warehouse
+io.github.getnf.embellish
+io.github.zen_browser.zen
+org.cvfosammmm.Setzer
+org.gnome.gitlab.somas.Apostrophe
+org.gnome.Weather
+org.texstudio.TeXstudio
+org.wezfurlong.wezterm
