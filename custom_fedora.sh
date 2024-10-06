@@ -173,7 +173,7 @@ EOF
                 if confirm_action; then
                     # Aquí podrías añadir un menú de aplicaciones populares
                     flatpak install $(cat apps.txt)
-                    print_message "Función en desarrollo"
+                    print_message "Se han instalado las aplicaciones"
                 fi
             fi
             ;;
