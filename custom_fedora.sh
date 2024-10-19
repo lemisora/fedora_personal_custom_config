@@ -54,9 +54,9 @@ while true; do
             print_message "Optimizando DNF..."
             if confirm_action; then
                 cat >> /etc/dnf/dnf.conf << EOF
-max_parallel_downloads=15
-fastestmirror=True
-EOF
+                max_parallel_downloads=15
+                fastestmirror=True
+                EOF
                 print_message "DNF ha sido optimizado"
             fi
             ;;
@@ -75,18 +75,18 @@ EOF
             print_message "Configurando TuneD..."
             if confirm_action; then
                 cat << EOF > /etc/tuned/ppd.conf
-[main]
-default=balanced
-battery_detection=true
+                [main]
+                default=balanced
+                battery_detection=true
 
-[profiles]
-power-saver=powersave
-balanced=balanced-battery
-performance=accelerator-performance
+                [profiles]
+                power-saver=powersave
+                balanced=balanced-battery
+                performance=accelerator-performance
 
-[battery]
-balanced=balanced-battery
-EOF
+                [battery]
+                balanced=balanced-battery
+                EOF
                 print_message "TuneD ha sido configurado"
             fi
             ;;
@@ -102,6 +102,7 @@ EOF
             if confirm_action; then
                 dnf5 install -y btrfs-assistant
                 print_message "Herramientas BTRFS instaladas"
+                # Se asumirá que se tienen ya creados los volumenes @home, @ y @snapshots
                 # Aquí podrías añadir más opciones para configurar subvolúmenes
             fi
             ;;
@@ -120,13 +121,36 @@ EOF
             print_message "Instalando fuentes y utilidades..."
             if confirm_action; then
                 #Añadir repositorio de terra
-                sudo dnf install --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' --setopt='terra.gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' terra-release
-                dnf5 install -y rsms-inter-fonts fastfetch curl
+                dnf install --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' --setopt='terra.gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' terra-release
+                dnf install -y rsms-inter-fonts fastfetch curl
                 curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo
-                dnf install cloudflare-warp
+                dnf install -y cloudflare-warp
                 systemctl enable --now warp-svc
+                warp-cli registration new
                 warp-cli mode warp+doh
                 warp-cli connect
+                # Repo para sbctl y hacer firmas para SecureBoot
+                dnf copr enable chenxiaolong/sbctl
+                # Repo para el kernel y complementos de CachyOS
+                dnf copr enable bieszczaders/kernel-cachyos
+                dnf copr enable bieszczaders/kernel-cachyos-addons
+                print_message "Instalando sbctl"
+                dnf install -y sbctl
+                setsebool -P domain_kernel_load_modules on # Para poder cargar módulos del kernel de CachyOS si está SELinux activo
+                dnf install -y kernel-cachyos kernel-cachyos-devel-matched
+                dnf install -y libcap-ng libcap-ng-devel procps-ng procps-ng-devel # Componentes necesarios para complementos
+                dnf install -y uksmd
+                systemctl enable --now uksmd.service
+                print_message "¿Quiere instalar la versión git de scx-scheds?"
+                echo "1) Sí"
+                echo "2) No, quiero instalar la versión estable"
+                read -p "Ingrese su elección: " elect
+                case $elect in
+                    1) dnf install -y scx-scheds-git;;
+                    2) dnf install -y scx-scheds;;
+                    *) print_message "Opción inválida";;
+                esac
+                systemctl enable --now scx.service
                 print_message "Fuentes y utilidades instaladas"
             fi
             ;;
@@ -140,7 +164,6 @@ EOF
         9)
             print_message "Configurando ZRAM y memoria..."
             if confirm_action; then
-                read -p "Ingrese el tamaño de ZRAM (ejemplo: 8G): " zram_size
                 cat << EOF > /etc/sysctl.d/99-vm-zram.conf
 vm.swappiness = 180
 vm.watermark_boost_factor = 0
@@ -149,7 +172,7 @@ vm.page-cluster = 0
 EOF
                 cat << EOF > /etc/systemd/zram-generator.conf
 [zram0]
-zram-size=$zram_size
+zram-size=ram
 compression-algorithm=zstd
 swap-priority=200
 EOF
@@ -165,6 +188,9 @@ EOF
 AllowHibernation=yes
 HibernateMode=shutdown
 EOF
+
+                cp systemd/systemd-hibernate.service.d/override.conf /etc/system/
+                cp systemd/systemd-logind.service.d/override.conf /etc/system/
                 cat << EOF > /etc/dracut.conf.d/resume.conf
 add_dracutmodules+=" resume "
 EOF
@@ -179,8 +205,18 @@ EOF
                 print_message "¿Desea instalar algunas aplicaciones comunes de Flatpak?"
                 if confirm_action; then
                     # Aquí podrías añadir un menú de aplicaciones populares
-                    flatpak install $(cat apps.txt)
-                    print_message "Se han instalado las aplicaciones"
+                    while IFS= read -r app; do
+                        if [[ ! -z "$app" ]]; then
+                            echo "Instalando $app..."
+                            flatpak install flathub -y "$app"
+                            if [[ $? -eq 0 ]]; then
+                                echo "$app se ha instalado correctamente"
+                            else
+                                echo "$app no se pudo instalar correctamente"
+                            fi
+                        fi
+                    done < apps.txt
+                    print_message "Se han instalado todas las aplicaciones"
                 fi
             fi
             ;;
