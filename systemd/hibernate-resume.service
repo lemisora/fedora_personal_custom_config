@@ -1,0 +1,11 @@
+[Unit]
+Description=Disable swap after resuming from hibernation
+After=hibernate.target
+
+[Service]
+User=root
+Type=oneshot
+ExecStart=/bin/bash -c "/usr/sbin/swapoff UUID=" # Here should be the UUID of the swap partition or swapfile
+
+[Install]
+WantedBy=hibernate.target
