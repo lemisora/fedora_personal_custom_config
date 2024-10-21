@@ -54,9 +54,9 @@ while true; do
             print_message "Optimizando DNF..."
             if confirm_action; then
                 cat >> /etc/dnf/dnf.conf << EOF
-                max_parallel_downloads=15
-                fastestmirror=True
-                EOF
+max_parallel_downloads=15
+fastestmirror=True
+EOF
                 print_message "DNF ha sido optimizado"
             fi
             ;;
@@ -75,18 +75,18 @@ while true; do
             print_message "Configurando TuneD..."
             if confirm_action; then
                 cat << EOF > /etc/tuned/ppd.conf
-                [main]
-                default=balanced
-                battery_detection=true
+[main]
+default=balanced
+battery_detection=true
 
-                [profiles]
-                power-saver=powersave
-                balanced=balanced-battery
-                performance=accelerator-performance
+[profiles]
+power-saver=powersave
+balanced=balanced-battery
+performance=accelerator-performance
 
-                [battery]
-                balanced=balanced-battery
-                EOF
+[battery]
+balanced=balanced-battery
+EOF
                 print_message "TuneD ha sido configurado"
             fi
             ;;
@@ -205,10 +205,10 @@ EOF
                 print_message "¿Desea instalar algunas aplicaciones comunes de Flatpak?"
                 if confirm_action; then
                     # Aquí podrías añadir un menú de aplicaciones populares
-                    while IFS= read -r app; do
+                    while read -r app; do
                         if [[ ! -z "$app" ]]; then
                             echo "Instalando $app..."
-                            flatpak install flathub -y "$app"
+                            flatpak install flathub --assumeyes "$app"
                             if [[ $? -eq 0 ]]; then
                                 echo "$app se ha instalado correctamente"
                             else
