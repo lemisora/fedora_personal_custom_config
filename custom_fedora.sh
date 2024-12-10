@@ -235,6 +235,25 @@ EOF
         10)
             print_message "Configurando hibernación..."
             if confirm_action; then
+		print_message "¿Está de acuerdo con que se cree un archivo swapfile en btrfs para hibernar (sino debería crearlo por su cuenta)?"
+		if confirm_action; then
+		    if ! btrfs subvolume create /swap; then
+		    	echo "Error al crear un subvolúmen de BTRFS, saliendo..."
+			exit 1
+	            fi
+		    read -p "Ingrese la cantidad que piensa usar para el swapfile (Ejemplo: 8G o 16G): " mem_size
+	            btrfs filesystem mkswapfile --size "$mem_size" /swap/swapfile
+		    echo "Se ha creado el swapfile de tamaño $mem_size en /swap/swapfile"
+	            offset=$(btrfs inspect-internal map-swapfile -r /swap/swapfile)
+	            uuid_swapfile=$(findmnt -no UUID -T /swap/swapfile)
+		    echo "Valor del offset: $offset Valor del UUID: $uuid_swapfile"
+	            grub_args="resume=UUID=$uuid_swapfile resume_offset=$offset"
+		    print_message "¿Añadir a GRUB los argumentos necesarios para poder hibernar?"
+		    if confirm_action; then
+		        grubby --update-kernel=ALL --args "$grub_args"
+	                print_message "Se ha actualizado GRUB"
+		    fi
+		fi
                 cat << EOF > /etc/systemd/sleep.conf
 [Sleep]
 AllowHibernation=yes
