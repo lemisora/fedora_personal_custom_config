@@ -93,6 +93,8 @@ EOF
         4)
             print_message "Optimizando la imagen de arranque con cambios a Dracut..."
             if confirm_action; then
+	    print_message "Se va a instalar lz4"
+	    dnf install lz4 -y
                 cat << EOF > /etc/dracut.conf.d/custom.conf
 add_dracutmodules+=" systemd "
 compress="lz4"
@@ -207,9 +209,9 @@ EOF
                         dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo --overwrite;
                         dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
                         systemctl enable --now docker containerd
-                        groupadd docker
+                        #groupadd docker
                         usermod -aG docker $USER
-                        newgrp docker #Para activar los cambios sin reiniciar
+                        #newgrp docker #Para activar los cambios sin reiniciar
                         print_message "Se recomienda reiniciar después de instalar Docker"
                         ;;
                     2) ;;   #No se hace nada, porque Fedora tiene podman preinstalado
@@ -217,8 +219,7 @@ EOF
                 esac
                 dnf5 install -y distrobox
                 print_message "Distrobox ha sido instalado"
-            fi
-            ;;
+            fi;;
         9)
             print_message "Configurando ZRAM..."
             if confirm_action; then
