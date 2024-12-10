@@ -151,6 +151,7 @@ EOF
                     *) print_message "Opción inválida";;
                 esac
                 systemctl enable --now scx.service
+		dnf install -y gnome-tweaks
                 print_message "Fuentes y utilidades instaladas"
             fi
             ;;
@@ -173,10 +174,11 @@ EOF
                 cat << EOF > /etc/systemd/zram-generator.conf
 [zram0]
 zram-size=ram
-compression-algorithm=zstd
+compression-algorithm=lz4
 swap-priority=200
 EOF
                 systemctl restart systemd-zram-setup@zram0.service
+		cp sysctl.d/50-vm-custom.conf /etc/sysctl.d/
                 print_message "ZRAM configurado"
             fi
             ;;
@@ -188,9 +190,11 @@ EOF
 AllowHibernation=yes
 HibernateMode=shutdown
 EOF
-
-                cp systemd/systemd-hibernate.service.d/override.conf /etc/system/
-                cp systemd/systemd-logind.service.d/override.conf /etc/system/
+		cp systemd/hibernate-* /etc/systemd/system/
+		mkdir -p /etc/systemd/system/systemd-hibernate.service.d/ /etc/systemd/system/systemd-logind.service.d/
+                cp systemd/systemd-hibernate.service.d/override.conf /etc/systemd/system/systemd-hibernate.service.d/
+                cp systemd/systemd-logind.service.d/override.conf /etc/systemd/system/systemd-logind.service.d/
+		systemctl enable hibernate-preparation.service hibernate-resume.service
                 cat << EOF > /etc/dracut.conf.d/resume.conf
 add_dracutmodules+=" resume "
 EOF
