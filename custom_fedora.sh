@@ -53,10 +53,9 @@ while true; do
         1)
             print_message "Optimizando DNF..."
             if confirm_action; then
-                cat >> /etc/dnf/dnf.conf << EOF
+                echo "
 max_parallel_downloads=15
-fastestmirror=True
-EOF
+fastestmirror=True" >> /etc/dnf/dnf.conf
                 print_message "DNF ha sido optimizado"
             fi
             ;;
@@ -210,7 +209,7 @@ EOF
                         dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
                         systemctl enable --now docker containerd
                         #groupadd docker
-                        usermod -aG docker $USER
+                        usermod -aG docker $SUDO_USER
                         #newgrp docker #Para activar los cambios sin reiniciar
                         print_message "Se recomienda reiniciar después de instalar Docker"
                         ;;
@@ -256,25 +255,21 @@ EOF
         11)
             print_message "Configurando Flatpak..."
             if confirm_action; then
-                flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-                print_message "¿Desea instalar algunas aplicaciones comunes de Flatpak?"
-                if confirm_action; then
-                    # Aquí podrías añadir un menú de aplicaciones populares
-                    while read -r app; do
-                        if [[ ! -z "$app" ]]; then
-                            echo "Instalando $app..."
-                            flatpak install flathub --assumeyes "$app"
-                            if [[ $? -eq 0 ]]; then
-                                echo "$app se ha instalado correctamente"
-                            else
-                                echo "$app no se pudo instalar correctamente"
-                            fi
-                        fi
-                    done < apps.txt
-                    print_message "Se han instalado todas las aplicaciones"
-                fi
-            fi
-            ;;
+	       print_message "¿Eliminar los repositorios de Fedora Flatpak?"
+	       if confirm_action; then
+	           flatpak remote-delete fedora
+		   print_message "Se han eliminado los repositorios de Fedora Flatpak"
+	       fi
+	       print_message "¿Desea agregar los repositorios de Flathub en modo usuario o dejarlos como están (en caso de haber activado los repositorios de terceros tras la primer ejecución)?"
+	       if confirm_action; then
+	           flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+		   print_message "Si tenía activado Flathub en modo system instalado, ¿desea eliminarlo?"
+		   if confirm_action; then
+	               flatpak remote-delete flathub --system
+		   fi
+	       fi
+	    fi
+	    ;;
         0)
             print_message "Saliendo del script..."
             exit 0
@@ -284,3 +279,4 @@ EOF
             ;;
     esac
 done
+
