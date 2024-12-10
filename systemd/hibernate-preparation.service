@@ -5,7 +5,7 @@ Before=systemd-hibernate.service
 [Service]
 User=root
 Type=oneshot
-ExecStart=/bin/bash -c "/usr/sbin/swapon UUID=" # Here should be the UUID of the swap partition or swapfile
+ExecStart=/bin/bash -c "/usr/sbin/swapon /swap/swapfile" # Here should be the UUID of the swap partition or swapfile
 
 [Install]
 WantedBy=systemd-hibernate.service
