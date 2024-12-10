@@ -37,10 +37,10 @@ while true; do
     echo "1) Optimizar DNF"
     echo "2) Instalar y configurar DNF5"
     echo "3) Configurar TuneD"
-    echo "4) Instalar GNOME Desktop"
+    echo "4) Optimizar imagen de arranque con Dracut"
     echo "5) Configurar BTRFS y herramientas"
     echo "6) Configurar entorno gráfico"
-    echo "7) Instalar fuentes y utilidades (Inter, fastfetch)"
+    echo "7) Instalar fuentes y utilidades"
     echo "8) Instalar y configurar Distrobox"
     echo "9) Configurar ZRAM y memoria"
     echo "10) Configurar hibernación"
@@ -77,12 +77,12 @@ EOF
                 cat << EOF > /etc/tuned/ppd.conf
 [main]
 default=balanced
-battery_detection=true
+battery_detection=false
 
 [profiles]
 power-saver=powersave
-balanced=balanced-battery
-performance=accelerator-performance
+balanced=balanced
+performance=throughput-performance
 
 [battery]
 balanced=balanced-battery
@@ -91,10 +91,14 @@ EOF
             fi
             ;;
         4)
-            print_message "Instalando GNOME Desktop..."
+            print_message "Optimizando la imagen de arranque con cambios a Dracut..."
             if confirm_action; then
-                dnf5 install -y @gnome-desktop
-                print_message "GNOME Desktop ha sido instalado"
+                cat << EOF > /etc/dracut.conf.d/custom.conf
+add_dracutmodules+=" systemd "
+compress="lz4"
+EOF
+                dracut -f
+                print_message "Se han hecho cambios a la configuración de dracut"
             fi
             ;;
         5)
@@ -121,56 +125,103 @@ EOF
             print_message "Instalando fuentes y utilidades..."
             if confirm_action; then
                 #Añadir repositorio de terra
+                print_message "Se van a activar los repositorios de terra (Ultramarine) para mayor cantidad de software disponible"
                 dnf install --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' --setopt='terra.gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' terra-release
-                dnf install -y rsms-inter-fonts fastfetch curl
-                curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo
-                dnf install -y cloudflare-warp
-                systemctl enable --now warp-svc
-                warp-cli registration new
-                warp-cli mode warp+doh
-                warp-cli connect
-                # Repo para sbctl y hacer firmas para SecureBoot
-                dnf copr enable chenxiaolong/sbctl
-                # Repo para el kernel y complementos de CachyOS
-                dnf copr enable bieszczaders/kernel-cachyos
-                dnf copr enable bieszczaders/kernel-cachyos-addons
-                print_message "Instalando sbctl"
-                dnf install -y sbctl
-                setsebool -P domain_kernel_load_modules on # Para poder cargar módulos del kernel de CachyOS si está SELinux activo
-                dnf install -y kernel-cachyos kernel-cachyos-devel-matched
-                dnf install -y libcap-ng libcap-ng-devel procps-ng procps-ng-devel # Componentes necesarios para complementos
-                dnf install -y uksmd
-                systemctl enable --now uksmd.service
-                print_message "¿Quiere instalar la versión git de scx-scheds?"
-                echo "1) Sí"
-                echo "2) No, quiero instalar la versión estable"
-                read -p "Ingrese su elección: " elect
-                case $elect in
-                    1) dnf install -y scx-scheds-git;;
-                    2) dnf install -y scx-scheds;;
-                    *) print_message "Opción inválida";;
+                dnf --refresh makecache
+
+                print_message "¿Desea instalar fish o quedarse con Bash como shell del sistema?"
+                echo "1) Instalar fish"
+                echo "2) Dejar bash"
+
+                read -p "Seleccione una opción: " shell_inst
+                case $shell_inst in
+                    1)  dnf install fish -y
+                        chsh -s /usr/bin/fish
+                        ;;
+                    2) ;;
+                    *) print_message "Opción inválida" ;;
                 esac
-                systemctl enable --now scx.service
-		dnf install -y gnome-tweaks
+
+                dnf install -y rsms-inter-fonts rsms-inter-vf-fonts mozilla-fira-fonts-common fastfetch curl
+                print_message "Se va a instalar Cloudflare Warp y se registrará. ¿Está de acuerdo?"
+
+                if confirm_action; then
+                    curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo
+                    dnf install -y cloudflare-warp
+                    systemctl enable --now warp-svc
+                    warp-cli registration new
+                    warp-cli mode warp+doh
+                    warp-cli connect
+                fi
+
+                # Repo para sbctl y hacer firmas para SecureBoot
+                #dnf copr enable chenxiaolong/sbctl
+
+                print_message "¿Desea instalar el kernel de CachyOS para mejor rendimiento"
+                if confirm_action; then
+                    # Repo para el kernel y complementos de CachyOS
+                    dnf copr enable bieszczaders/kernel-cachyos
+                    dnf copr enable bieszczaders/kernel-cachyos-addons
+                    #print_message "Instalando sbctl"
+                    dnf install -y sbctl
+                    setsebool -P domain_kernel_load_modules on # Para poder cargar módulos del kernel de CachyOS si está SELinux activo
+                    dnf install -y kernel-cachyos kernel-cachyos-devel-matched
+                    dnf install -y libcap-ng libcap-ng-devel procps-ng procps-ng-devel # Componentes necesarios para complementos
+                    dnf install -y uksmd
+                    systemctl enable --now uksmd.service
+                    print_message "¿Quiere instalar la versión git de scx-scheds?"
+                    echo "1) Sí"
+                    echo "2) No, quiero instalar la versión estable"
+                    read -p "Ingrese su elección: " elect
+                    case $elect in
+                        1) dnf install -y scx-scheds-git;;
+                        2) dnf install -y scx-scheds;;
+                        *) print_message "Opción inválida";;
+                    esac
+                    systemctl enable --now scx.service
+                fi
+
+                print_message "¿Desea instalar utilidades para configurar GNOME?"
+                if confirm_action; then
+                    dnf install -y gnome-tweaks dconf-editor
+                fi
+
+                print_message "¿Desea instalar las mejoras al renderizado de fuentes?"
+                if confirm_action; then
+                    echo "FREETYPE_PROPERTIES=\"cff:no-stem-darkening=0 autofitter:no-stem-darkening=0\"" > /etc/environment
+                fi
+
                 print_message "Fuentes y utilidades instaladas"
             fi
             ;;
         8)
             print_message "Instalando Distrobox..."
             if confirm_action; then
+                print_message "¿Prefiere Docker o Podman para contenedores?"
+                echo "1) Docker"
+                echo "2) Podman"
+
+                read -p "Ingrese su elección: " cont
+                case $cont in
+                    1) dnf remove podman
+                        dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo --overwrite;
+                        dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                        systemctl enable --now docker containerd
+                        groupadd docker
+                        usermod -aG docker $USER
+                        newgrp docker #Para activar los cambios sin reiniciar
+                        print_message "Se recomienda reiniciar después de instalar Docker"
+                        ;;
+                    2) ;;   #No se hace nada, porque Fedora tiene podman preinstalado
+                    *) print_message "Opción inválida";;
+                esac
                 dnf5 install -y distrobox
                 print_message "Distrobox ha sido instalado"
             fi
             ;;
         9)
-            print_message "Configurando ZRAM y memoria..."
+            print_message "Configurando ZRAM..."
             if confirm_action; then
-                cat << EOF > /etc/sysctl.d/99-vm-zram.conf
-vm.swappiness = 180
-vm.watermark_boost_factor = 0
-vm.watermark_scale_factor = 125
-vm.page-cluster = 0
-EOF
                 cat << EOF > /etc/systemd/zram-generator.conf
 [zram0]
 zram-size=ram
@@ -178,7 +229,6 @@ compression-algorithm=lz4
 swap-priority=200
 EOF
                 systemctl restart systemd-zram-setup@zram0.service
-		cp sysctl.d/50-vm-custom.conf /etc/sysctl.d/
                 print_message "ZRAM configurado"
             fi
             ;;
@@ -190,11 +240,11 @@ EOF
 AllowHibernation=yes
 HibernateMode=shutdown
 EOF
-		cp systemd/hibernate-* /etc/systemd/system/
-		mkdir -p /etc/systemd/system/systemd-hibernate.service.d/ /etc/systemd/system/systemd-logind.service.d/
+		        cp systemd/hibernate-* /etc/systemd/system/
+		        mkdir -p /etc/systemd/system/systemd-hibernate.service.d/ /etc/systemd/system/systemd-logind.service.d/
                 cp systemd/systemd-hibernate.service.d/override.conf /etc/systemd/system/systemd-hibernate.service.d/
                 cp systemd/systemd-logind.service.d/override.conf /etc/systemd/system/systemd-logind.service.d/
-		systemctl enable hibernate-preparation.service hibernate-resume.service
+                systemctl enable hibernate-preparation.service hibernate-resume.service
                 cat << EOF > /etc/dracut.conf.d/resume.conf
 add_dracutmodules+=" resume "
 EOF
