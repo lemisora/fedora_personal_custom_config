@@ -130,18 +130,10 @@ EOF
                 dnf install --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' --setopt='terra.gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' terra-release
                 dnf --refresh makecache
 
-                print_message "¿Desea instalar fish o quedarse con Bash como shell del sistema?"
-                echo "1) Instalar fish"
-                echo "2) Dejar bash"
-
-                read -p "Seleccione una opción: " shell_inst
-                case $shell_inst in
-                    1)  dnf install fish -y
-                        chsh -s /usr/bin/fish
-                        ;;
-                    2) ;;
-                    *) print_message "Opción inválida" ;;
-                esac
+                print_message "¿Desea instalar fish?
+                if confirm_action; then
+		    dnf install fish -y
+		fi
 
                 dnf install -y rsms-inter-fonts rsms-inter-vf-fonts mozilla-fira-fonts-common fastfetch curl
                 print_message "Se va a instalar Cloudflare Warp y se registrará. ¿Está de acuerdo?"
