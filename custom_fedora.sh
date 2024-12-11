@@ -130,7 +130,7 @@ EOF
                 dnf install --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' --setopt='terra.gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' terra-release
                 dnf --refresh makecache
 
-                print_message "¿Desea instalar fish?
+                print_message "¿Desea instalar fish?"
                 if confirm_action; then
 		    dnf install fish -y
 		fi
